@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-
-const CLAUDE_MODEL = "claude-sonnet-4-20250514";
+import { useState, useRef } from "react";
 
 const MOCK_COMMENTS = [
   { id: "fb_001", platform: "facebook", author: "Chisom Eze", avatar: "CE", text: "Love this post! Where can I get more info?", postTitle: "New collection drop 🔥", time: "2m ago", type: "simple" },
@@ -15,16 +13,6 @@ const MOCK_OUTREACH = [
   { id: "out_002", platform: "facebook", creator: "Lagos Fashion Week (Official)", avatar: "LF", postText: "Who is ready for the runway? Drop your favourite accessories below.", time: "3h ago", apiAccessible: true, status: "drafted", draft: "Counting down the days! Nothing finishes a runway look quite like a bold headband and matching jewellery set." },
   { id: "out_003", platform: "instagram", creator: "@style_inspo_uk", avatar: "SI", postText: "Holiday prep starts now. Packing light but keeping it chic.", time: "4h ago", apiAccessible: false, status: "drafted", draft: "The perfect strategy. Our Holiday Shop is full of easy-chic sets that save so much space in the suitcase." },
 ];
-
-const BRAND_CONTEXT = `You are a social media comment reply assistant for Phatbird, an online store selling luxury dresses and accessories. 
-Tone: friendly, warm, conversational, never robotic. Use occasional emojis naturally. Keep replies concise (1-3 sentences max).
-Always end with a soft positive note. Never make up specific order/shipping details.`;
-
-function classifyComment(text: string) {
-  const complexKeywords = ["order", "package", "deliver", "refund", "payment", "ship", "wrong", "missing", "broken", "disappointed", "complaint", "receipt", "tracking"];
-  const lower = text.toLowerCase();
-  return complexKeywords.some(k => lower.includes(k)) ? "complex" : "simple";
-}
 
 const PlatformIcon = ({ platform, size = 16 }: { platform: string, size?: number }) => {
   if (platform === "facebook") return (
@@ -48,44 +36,18 @@ const PlatformIcon = ({ platform, size = 16 }: { platform: string, size?: number
   );
 };
 
-const Badge = ({ type }: { type: string }) => (
-  <span style={{
-    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
-    padding: "2px 8px", borderRadius: 20,
-    background: type === "complex" ? "#fff3cd" : "#d4f8e8",
-    color: type === "complex" ? "#856404" : "#155724",
-    border: `1px solid ${type === "complex" ? "#ffc107" : "#28a745"}`,
-  }}>
-    {type === "complex" ? "⚠ Needs Review" : "✓ Auto-eligible"}
-  </span>
-);
-
 export default function MetaCommentBot() {
   const [activeTab, setActiveTab] = useState("inbox");
-  const [comments, setComments] = useState(MOCK_COMMENTS.map(c => ({ ...c, status: "pending", reply: "", generating: false })));
+  const [comments] = useState(MOCK_COMMENTS);
   const [outreach, setOutreach] = useState(MOCK_OUTREACH);
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [stats, setStats] = useState({ autoPosted: 0, pendingApproval: 0, totalHandled: 0 });
   const [toast, setToast] = useState<{msg: string, type: string} | null>(null);
   
-  const toastTimer = useRef<any>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (msg: string, type = "success") => {
     setToast({ msg, type });
-    clearTimeout(toastTimer.current);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 3000);
-  };
-
-  useEffect(() => {
-    const auto = comments.filter(c => c.status === "auto-posted").length;
-    const pending = comments.filter(c => c.status === "pending" || c.status === "awaiting-approval").length;
-    const handled = comments.filter(c => c.status === "auto-posted" || c.status === "approved").length;
-    setStats({ autoPosted: auto, pendingApproval: pending, totalHandled: handled });
-  }, [comments]);
-
-  const approveReply = (id: string) => {
-    setComments(prev => prev.map(c => c.id === id ? { ...c, status: "approved" } : c));
-    showToast("Reply approved & posted ✓");
   };
 
   const copyOutreach = async (text: string, id: string) => {
@@ -98,14 +60,6 @@ export default function MetaCommentBot() {
     setOutreach(prev => prev.map(o => o.id === id ? { ...o, status: "posted" } : o));
     showToast("Comment published via API ✓");
   };
-
-  const filteredComments = comments.filter(c => {
-    if (activeFilter === "all") return c.status !== "dismissed";
-    if (activeFilter === "pending") return c.status === "pending";
-    if (activeFilter === "review") return c.status === "awaiting-approval";
-    if (activeFilter === "done") return c.status === "auto-posted" || c.status === "approved";
-    return true;
-  });
 
   const s = {
     app: { fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", background: "#0f0f13", color: "#e8e8f0" },
@@ -152,7 +106,7 @@ export default function MetaCommentBot() {
 
       <div style={s.feed}>
         {activeTab === "inbox" ? (
-          filteredComments.map(comment => (
+          comments.map(comment => (
             <div key={comment.id} style={s.card}>
                <div style={s.cardTop}>
                   <div style={s.avatar(comment.platform)}>{comment.avatar}</div>
