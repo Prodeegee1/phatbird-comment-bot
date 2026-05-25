@@ -20,13 +20,13 @@ const BRAND_CONTEXT = `You are a social media comment reply assistant for Phatbi
 Tone: friendly, warm, conversational, never robotic. Use occasional emojis naturally. Keep replies concise (1-3 sentences max).
 Always end with a soft positive note. Never make up specific order/shipping details.`;
 
-function classifyComment(text) {
+function classifyComment(text: string) {
   const complexKeywords = ["order", "package", "deliver", "refund", "payment", "ship", "wrong", "missing", "broken", "disappointed", "complaint", "receipt", "tracking"];
   const lower = text.toLowerCase();
   return complexKeywords.some(k => lower.includes(k)) ? "complex" : "simple";
 }
 
-const PlatformIcon = ({ platform, size = 16 }) => {
+const PlatformIcon = ({ platform, size = 16 }: { platform: string, size?: number }) => {
   if (platform === "facebook") return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="#1877F2">
       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -48,7 +48,7 @@ const PlatformIcon = ({ platform, size = 16 }) => {
   );
 };
 
-const Badge = ({ type }) => (
+const Badge = ({ type }: { type: string }) => (
   <span style={{
     fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
     padding: "2px 8px", borderRadius: 20,
@@ -66,11 +66,11 @@ export default function MetaCommentBot() {
   const [outreach, setOutreach] = useState(MOCK_OUTREACH);
   const [activeFilter, setActiveFilter] = useState("all");
   const [stats, setStats] = useState({ autoPosted: 0, pendingApproval: 0, totalHandled: 0 });
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState<{msg: string, type: string} | null>(null);
   
-  const toastTimer = useRef(null);
+  const toastTimer = useRef<any>(null);
 
-  const showToast = (msg, type = "success") => {
+  const showToast = (msg: string, type = "success") => {
     setToast({ msg, type });
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 3000);
@@ -83,18 +83,18 @@ export default function MetaCommentBot() {
     setStats({ autoPosted: auto, pendingApproval: pending, totalHandled: handled });
   }, [comments]);
 
-  const approveReply = (id) => {
+  const approveReply = (id: string) => {
     setComments(prev => prev.map(c => c.id === id ? { ...c, status: "approved" } : c));
     showToast("Reply approved & posted ✓");
   };
 
-  const copyOutreach = async (text, id) => {
+  const copyOutreach = async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
     setOutreach(prev => prev.map(o => o.id === id ? { ...o, status: "copied" } : o));
     showToast("Copied to clipboard! Ready to paste.");
   };
 
-  const approveOutreachPost = (id) => {
+  const approveOutreachPost = (id: string) => {
     setOutreach(prev => prev.map(o => o.id === id ? { ...o, status: "posted" } : o));
     showToast("Comment published via API ✓");
   };
@@ -115,24 +115,24 @@ export default function MetaCommentBot() {
     logoIcon: { width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, #667eea, #764ba2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 },
     logoText: { fontSize: 20, fontWeight: 800, color: "#fff" },
     navTabs: { display: "flex", gap: 10, background: "rgba(0,0,0,0.2)", padding: 6, borderRadius: 12, width: "fit-content" },
-    tabBtn: (active) => ({ padding: "8px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", border: "none", background: active ? "#667eea" : "transparent", color: active ? "#fff" : "rgba(255,255,255,0.6)", transition: "all 0.2s" }),
+    tabBtn: (active: boolean) => ({ padding: "8px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", border: "none", background: active ? "#667eea" : "transparent", color: active ? "#fff" : "rgba(255,255,255,0.6)", transition: "all 0.2s" }),
     feed: { padding: "28px", display: "flex", flexDirection: "column", gap: 14, maxWidth: 900, margin: "0 auto" },
     card: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: "20px 22px" },
     cardTop: { display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 14 },
-    avatar: (platform) => ({ width: 44, height: 44, borderRadius: "50%", background: platform === "facebook" ? "linear-gradient(135deg, #1877F2, #42b0ff)" : "linear-gradient(135deg, #f09433, #bc1888)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "#fff", flexShrink: 0 }),
+    avatar: (platform: string) => ({ width: 44, height: 44, borderRadius: "50%", background: platform === "facebook" ? "linear-gradient(135deg, #1877F2, #42b0ff)" : "linear-gradient(135deg, #f09433, #bc1888)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "#fff", flexShrink: 0 }),
     textBubble: { fontSize: 15, color: "rgba(255,255,255,0.8)", lineHeight: 1.6, background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 8, marginTop: 8 },
     replyBox: { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 14, marginBottom: 12 },
     actions: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 },
-    btn: (variant) => {
-      const styles = {
+    btn: (variant: string) => {
+      const styles: Record<string, any> = {
         primary: { background: "linear-gradient(135deg, #667eea, #764ba2)", color: "#fff", border: "none" },
         success: { background: "linear-gradient(135deg, #22c55e, #16a34a)", color: "#fff", border: "none" },
         outline: { background: "transparent", color: "#667eea", border: "1px solid #667eea" },
       };
       return { ...styles[variant], padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer" };
     },
-    apiBadge: (accessible) => ({ fontSize: 11, padding: "4px 8px", borderRadius: 6, background: accessible ? "rgba(34,197,94,0.1)" : "rgba(251,191,36,0.1)", color: accessible ? "#4ade80" : "#fbbf24", marginLeft: "auto", border: `1px solid ${accessible ? "rgba(34,197,94,0.2)" : "rgba(251,191,36,0.2)"}` }),
-    toast: (type) => ({ position: "fixed", bottom: 24, right: 24, padding: "14px 22px", borderRadius: 14, background: type === "error" ? "#dc2626" : "#22c55e", color: "#fff", fontSize: 14, fontWeight: 600, zIndex: 1000 })
+    apiBadge: (accessible: boolean) => ({ fontSize: 11, padding: "4px 8px", borderRadius: 6, background: accessible ? "rgba(34,197,94,0.1)" : "rgba(251,191,36,0.1)", color: accessible ? "#4ade80" : "#fbbf24", marginLeft: "auto", border: `1px solid ${accessible ? "rgba(34,197,94,0.2)" : "rgba(251,191,36,0.2)"}` }),
+    toast: (type: string) => ({ position: "fixed" as const, bottom: 24, right: 24, padding: "14px 22px", borderRadius: 14, background: type === "error" ? "#dc2626" : "#22c55e", color: "#fff", fontSize: 14, fontWeight: 600, zIndex: 1000 })
   };
 
   return (
