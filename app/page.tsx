@@ -38,7 +38,7 @@ const PlatformIcon = ({ platform, size = 16 }: { platform: string, size?: number
 
 export default function MetaCommentBot() {
   const [activeTab, setActiveTab] = useState("inbox");
-  const [comments] = useState(MOCK_COMMENTS);
+  const [comments, setComments] = useState(MOCK_COMMENTS.map(c => ({ ...c, generatedReply: "", isGenerating: false })));
   const [outreach, setOutreach] = useState(MOCK_OUTREACH);
   const [toast, setToast] = useState<{msg: string, type: string} | null>(null);
   
@@ -59,6 +59,27 @@ export default function MetaCommentBot() {
   const approveOutreachPost = (id: string) => {
     setOutreach(prev => prev.map(o => o.id === id ? { ...o, status: "posted" } : o));
     showToast("Comment published via API ✓");
+  };
+
+  const generateReply = async (id: string, text: string) => {
+    setComments(prev => prev.map(c => c.id === id ? { ...c, isGenerating: true } : c));
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: text })
+      });
+      const data = await res.json();
+      if (data.reply) {
+        setComments(prev => prev.map(c => c.id === id ? { ...c, generatedReply: data.reply, isGenerating: false } : c));
+        showToast("Draft generated! ✨");
+      } else {
+        throw new Error("No reply");
+      }
+    } catch (error) {
+      setComments(prev => prev.map(c => c.id === id ? { ...c, isGenerating: false } : c));
+      showToast("Failed to generate draft.", "error");
+    }
   };
 
   const s = {
@@ -115,6 +136,32 @@ export default function MetaCommentBot() {
                     <div style={s.textBubble}>"{comment.text}"</div>
                   </div>
                </div>
+
+               <div style={s.actions}>
+                 <button 
+                   style={s.btn("primary")} 
+                   onClick={() => generateReply(comment.id, comment.text)}
+                   disabled={comment.isGenerating}
+                 >
+                   {comment.isGenerating ? "⏳ Thinking..." : "✨ Generate AI Reply"}
+                 </button>
+               </div>
+
+               {comment.generatedReply && (
+                 <div style={{ ...s.replyBox, marginTop: 14 }}>
+                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8, fontWeight: 700 }}>🤖 AI DRAFT</div>
+                   <div style={{ fontSize: 14, color: "#fff" }}>{comment.generatedReply}</div>
+                   <button 
+                     style={{ ...s.btn("success"), marginTop: 10 }}
+                     onClick={() => {
+                        navigator.clipboard.writeText(comment.generatedReply);
+                        showToast("Reply copied to clipboard!");
+                     }}
+                   >
+                     📋 Copy Reply
+                   </button>
+                 </div>
+               )}
             </div>
           ))
         ) : (
